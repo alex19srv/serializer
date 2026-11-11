@@ -6,8 +6,7 @@ package main
 import (
 	"fmt"
 	"os"
-
-	"persistent_value/internal/serializator"
+	"persistent_value/internal/serializer"
 )
 
 func main() {
@@ -15,7 +14,7 @@ func main() {
 		fail("usage: codegen <input.go> <output.go>")
 	}
 
-	if err := serializator.GenerateSerializationsForFile(os.Args[1], os.Args[2]); err != nil {
+	if err := serializer.GenerateSerializationsForFile(os.Args[1], os.Args[2]); err != nil {
 		fail("%v", err)
 	}
 }

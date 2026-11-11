@@ -7,9 +7,16 @@ env:
 
 jobs:
   build_and_test:
-    runs-on:
-      - ubuntu-latest
-      # - ubuntu-26.04-arm
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x64
+            runs-on: ubuntu-latest
+          - arch: arm64
+            runs-on: ubuntu-26.04-arm
+    runs-on: ${{ matrix.runs-on }}
+
     steps:
       - name: Checkout serializer code
         uses: actions/checkout@v6

@@ -1,0 +1,31 @@
+name: build and test
+on:
+  push:
+    branches: [develop, main]
+env:
+  GO_VERSION: "1.27"
+
+jobs:
+  build_backend:
+    runs-on: [ ubuntu-latest, ubuntu-26.04-arm ]
+    steps:
+      - name: Checkout backend code
+        uses: actions/checkout@v6
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: ./backend/go.sum
+
+      - name: Download go dependencies
+        working-directory: ./backend
+        run: go mod download
+
+      - name: Setup just
+        if: inputs.run_build || inputs.run_tests
+        uses: extractions/setup-just@v3
+
+      - name: run tests
+        run: |
+          just generate test_e2e

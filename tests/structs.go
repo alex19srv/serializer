@@ -3,7 +3,7 @@
 
 package serialize
 
-//	type User struct { // persist_it!!!
+//	type User struct {
 //		ID   int
 //		Name string
 //	}

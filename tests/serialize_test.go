@@ -8,7 +8,18 @@ import (
 )
 
 func TestIntDataRoundTrip(t *testing.T) {
-	original := IntData{ID: 0xffffabcd7382125}
+	original := IntData{
+		ID:    0xffffabcd7382125,
+		Id8:   127,
+		Id16:  32535,
+		Id32:  2147483647,
+		Id64:  9223372036854775807,
+		UID:   0xffffabcd7382125,
+		UId8:  255,
+		UId16: 65535,
+		UId32: 4294967295,
+		UId64: 18446744073709551615,
+	}
 	buffer := make([]byte, original.SerializedSize())
 	size := original.Serialize(buffer)
 

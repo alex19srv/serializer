@@ -8,12 +8,93 @@ import (
 	"unsafe"
 )
 
-func (s *IntData) Serialise(buffer []byte) uintptr {
+func (s *IntData) Serialize(buffer []byte) uintptr {
 	offset := uintptr(0)
 	{
 		ptr := (*int)(unsafe.Add(unsafe.Pointer(&buffer[0]), offset))
 		*ptr = s.ID
 		offset += unsafe.Sizeof(int(0))
+	}
+	{
+		ptr := (*int8)(unsafe.Add(unsafe.Pointer(&buffer[0]), offset))
+		*ptr = s.Id8
+		offset += unsafe.Sizeof(int8(0))
+	}
+	{
+		ptr := (*int16)(unsafe.Add(unsafe.Pointer(&buffer[0]), offset))
+		*ptr = s.Id16
+		offset += unsafe.Sizeof(int16(0))
+	}
+	{
+		ptr := (*int32)(unsafe.Add(unsafe.Pointer(&buffer[0]), offset))
+		*ptr = s.Id32
+		offset += unsafe.Sizeof(int32(0))
+	}
+	{
+		ptr := (*int64)(unsafe.Add(unsafe.Pointer(&buffer[0]), offset))
+		*ptr = s.Id64
+		offset += unsafe.Sizeof(int64(0))
+	}
+	{
+		ptr := (*uint)(unsafe.Add(unsafe.Pointer(&buffer[0]), offset))
+		*ptr = s.UID
+		offset += unsafe.Sizeof(uint(0))
+	}
+	{
+		ptr := (*uint8)(unsafe.Add(unsafe.Pointer(&buffer[0]), offset))
+		*ptr = s.UId8
+		offset += unsafe.Sizeof(uint8(0))
+	}
+	{
+		ptr := (*uint16)(unsafe.Add(unsafe.Pointer(&buffer[0]), offset))
+		*ptr = s.UId16
+		offset += unsafe.Sizeof(uint16(0))
+	}
+	{
+		ptr := (*uint32)(unsafe.Add(unsafe.Pointer(&buffer[0]), offset))
+		*ptr = s.UId32
+		offset += unsafe.Sizeof(uint32(0))
+	}
+	{
+		ptr := (*uint64)(unsafe.Add(unsafe.Pointer(&buffer[0]), offset))
+		*ptr = s.UId64
+		offset += unsafe.Sizeof(uint64(0))
+	}
+
+	return offset
+}
+
+func (s *IntData) SerializedSize() uintptr {
+	offset := uintptr(0)
+	{
+		offset += unsafe.Sizeof(int(0))
+	}
+	{
+		offset += unsafe.Sizeof(int8(0))
+	}
+	{
+		offset += unsafe.Sizeof(int16(0))
+	}
+	{
+		offset += unsafe.Sizeof(int32(0))
+	}
+	{
+		offset += unsafe.Sizeof(int64(0))
+	}
+	{
+		offset += unsafe.Sizeof(uint(0))
+	}
+	{
+		offset += unsafe.Sizeof(uint8(0))
+	}
+	{
+		offset += unsafe.Sizeof(uint16(0))
+	}
+	{
+		offset += unsafe.Sizeof(uint32(0))
+	}
+	{
+		offset += unsafe.Sizeof(uint64(0))
 	}
 
 	return offset
@@ -27,11 +108,56 @@ func NewIntDataFromBytes(buffer []byte) IntData {
 		res.ID = *ptr
 		offset += unsafe.Sizeof(int(0))
 	}
+	{
+		ptr := (*int8)(unsafe.Add(unsafe.Pointer(&buffer[0]), offset))
+		res.Id8 = *ptr
+		offset += unsafe.Sizeof(int8(0))
+	}
+	{
+		ptr := (*int16)(unsafe.Add(unsafe.Pointer(&buffer[0]), offset))
+		res.Id16 = *ptr
+		offset += unsafe.Sizeof(int16(0))
+	}
+	{
+		ptr := (*int32)(unsafe.Add(unsafe.Pointer(&buffer[0]), offset))
+		res.Id32 = *ptr
+		offset += unsafe.Sizeof(int32(0))
+	}
+	{
+		ptr := (*int64)(unsafe.Add(unsafe.Pointer(&buffer[0]), offset))
+		res.Id64 = *ptr
+		offset += unsafe.Sizeof(int64(0))
+	}
+	{
+		ptr := (*uint)(unsafe.Add(unsafe.Pointer(&buffer[0]), offset))
+		res.UID = *ptr
+		offset += unsafe.Sizeof(uint(0))
+	}
+	{
+		ptr := (*uint8)(unsafe.Add(unsafe.Pointer(&buffer[0]), offset))
+		res.UId8 = *ptr
+		offset += unsafe.Sizeof(uint8(0))
+	}
+	{
+		ptr := (*uint16)(unsafe.Add(unsafe.Pointer(&buffer[0]), offset))
+		res.UId16 = *ptr
+		offset += unsafe.Sizeof(uint16(0))
+	}
+	{
+		ptr := (*uint32)(unsafe.Add(unsafe.Pointer(&buffer[0]), offset))
+		res.UId32 = *ptr
+		offset += unsafe.Sizeof(uint32(0))
+	}
+	{
+		ptr := (*uint64)(unsafe.Add(unsafe.Pointer(&buffer[0]), offset))
+		res.UId64 = *ptr
+		offset += unsafe.Sizeof(uint64(0))
+	}
 
 	return res
 }
 
-func (s *Data) Serialise(buffer []byte) uintptr {
+func (s *Data) Serialize(buffer []byte) uintptr {
 	offset := uintptr(0)
 	{
 		ptr := (*int)(unsafe.Add(unsafe.Pointer(&buffer[0]), offset))
@@ -50,6 +176,24 @@ func (s *Data) Serialise(buffer []byte) uintptr {
 	{
 		ptr := (*int)(unsafe.Add(unsafe.Pointer(&buffer[0]), offset))
 		*ptr = s.SID
+		offset += unsafe.Sizeof(int(0))
+	}
+
+	return offset
+}
+
+func (s *Data) SerializedSize() uintptr {
+	offset := uintptr(0)
+	{
+		offset += unsafe.Sizeof(int(0))
+	}
+	{
+		offset += unsafe.Sizeof(uint16(0))
+		if len(s.Value) > 0 {
+			offset += uintptr(len(s.Value))
+		}
+	}
+	{
 		offset += unsafe.Sizeof(int(0))
 	}
 

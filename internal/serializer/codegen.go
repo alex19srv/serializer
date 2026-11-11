@@ -17,6 +17,14 @@ import (
 const (
 	typeInt = iota
 	typeUint
+	typeInt8
+	typeUint8
+	typeInt16
+	typeUint16
+	typeInt32
+	typeUint32
+	typeInt64
+	typeUint64
 	typeString
 )
 
@@ -71,7 +79,6 @@ func GenerateSerializationsForFile(inputPath, outputPath string) error {
 			structsData = append(structsData, StructData{Name: structName, Fields: fields})
 		}
 	}
-	// fmt.Printf("Structs %v\n", structsData)
 
 	if len(structsData) == 0 {
 		return fmt.Errorf("no structs marked with // saga:serialize found in %s", inputPath)
@@ -81,7 +88,6 @@ func GenerateSerializationsForFile(inputPath, outputPath string) error {
 	if err != nil {
 		return fmt.Errorf("generate code: %w", err)
 	}
-	// fmt.Println(string(code))
 
 	if err := os.WriteFile(outputPath, code, 0o644); err != nil {
 		return fmt.Errorf("write %s: %w", outputPath, err)
@@ -123,6 +129,22 @@ func readStructFields(astType *ast.StructType) ([]Field, error) {
 			fieldTypeID = typeInt
 		case "uint":
 			fieldTypeID = typeUint
+		case "int8":
+			fieldTypeID = typeInt8
+		case "uint8":
+			fieldTypeID = typeUint8
+		case "int16":
+			fieldTypeID = typeInt16
+		case "uint16":
+			fieldTypeID = typeUint16
+		case "int32":
+			fieldTypeID = typeInt32
+		case "uint32":
+			fieldTypeID = typeUint32
+		case "int64":
+			fieldTypeID = typeInt64
+		case "uint64":
+			fieldTypeID = typeUint64
 		case "string":
 			fieldTypeID = typeString
 		default:
@@ -151,7 +173,7 @@ func generateSrcFileText() ([]byte, error) {
 
 	// generate methods
 	for _, data := range structsData {
-		methodText, err := generateMethod(data)
+		methodText, err := generateStructMethods(data)
 		if err != nil {
 			return nil, fmt.Errorf("generate method for %s: %w", data.Name, err)
 		}
@@ -166,33 +188,88 @@ func generateSrcFileText() ([]byte, error) {
 	return formatted, nil
 }
 
-func generateMethod(data StructData) (string, error) {
+func generateStructMethods(data StructData) (string, error) {
 	var serializeOutBuffer bytes.Buffer
+	var serializeSizeOutBuffer bytes.Buffer
 	var deserializeOutBuffer bytes.Buffer
-	err := serializeHeaderTmpl.Execute(&serializeOutBuffer, &data)
+	err := serializeHeaderTmpl.Execute(&serializeOutBuffer,
+		&struct {
+			StructName string
+		}{
+			data.Name,
+		})
 	if err != nil {
 		return "", fmt.Errorf("execute template: %w", err)
 	}
-	err = deserializeHeaderTmpl.Execute(&deserializeOutBuffer, &data)
+	err = serializedSizeHeaderTmpl.Execute(&serializeSizeOutBuffer,
+		&struct {
+			StructName string
+		}{
+			data.Name,
+		})
+	if err != nil {
+		return "", fmt.Errorf("execute template: %w", err)
+	}
+	err = deserializeHeaderTmpl.Execute(&deserializeOutBuffer,
+		&struct {
+			StructName string
+		}{
+			data.Name,
+		})
 	if err != nil {
 		return "", fmt.Errorf("execute template: %w", err)
 	}
 	for _, field := range data.Fields {
 		switch field.Type {
 		case typeInt:
-			err = serializeIntTmpl.Execute(&serializeOutBuffer, &field)
-			if err != nil {
-				break
-			}
-			err = deserializeIntTmpl.Execute(&deserializeOutBuffer, &field)
-		// case typeUint:
-		// 	err = serializeUintTmpl.Execute(&output, &field)
+			err = serializeIntField("int", &serializeOutBuffer, &serializeSizeOutBuffer, &deserializeOutBuffer, field)
+		case typeUint:
+			err = serializeIntField("uint", &serializeOutBuffer, &serializeSizeOutBuffer, &deserializeOutBuffer, field)
+		case typeInt8:
+			err = serializeIntField("int8", &serializeOutBuffer, &serializeSizeOutBuffer, &deserializeOutBuffer, field)
+		case typeUint8:
+			err = serializeIntField("uint8", &serializeOutBuffer, &serializeSizeOutBuffer, &deserializeOutBuffer, field)
+		case typeInt16:
+			err = serializeIntField("int16", &serializeOutBuffer, &serializeSizeOutBuffer, &deserializeOutBuffer, field)
+		case typeUint16:
+			err = serializeIntField("uint16", &serializeOutBuffer, &serializeSizeOutBuffer, &deserializeOutBuffer, field)
+		case typeInt32:
+			err = serializeIntField("int32", &serializeOutBuffer, &serializeSizeOutBuffer, &deserializeOutBuffer, field)
+		case typeUint32:
+			err = serializeIntField("uint32", &serializeOutBuffer, &serializeSizeOutBuffer, &deserializeOutBuffer, field)
+		case typeInt64:
+			err = serializeIntField("int64", &serializeOutBuffer, &serializeSizeOutBuffer, &deserializeOutBuffer, field)
+		case typeUint64:
+			err = serializeIntField("uint64", &serializeOutBuffer, &serializeSizeOutBuffer, &deserializeOutBuffer, field)
 		case typeString:
-			err = serializeStringTmpl.Execute(&serializeOutBuffer, &field)
+			err = serializeStringTmpl.Execute(&serializeOutBuffer,
+				&struct {
+					FieldName string
+					CopyData  bool
+				}{
+					field.Name,
+					true,
+				})
 			if err != nil {
 				break
 			}
-			err = deserializeStringTmpl.Execute(&deserializeOutBuffer, &field)
+			err = serializeStringTmpl.Execute(&serializeSizeOutBuffer,
+				&struct {
+					FieldName string
+					CopyData  bool
+				}{
+					field.Name,
+					false,
+				})
+			if err != nil {
+				break
+			}
+			err = deserializeStringTmpl.Execute(&deserializeOutBuffer,
+				&struct {
+					FieldName string
+				}{
+					field.Name,
+				})
 		default:
 			return "", fmt.Errorf("unsupported type %d", field.Type)
 		}
@@ -204,11 +281,60 @@ func generateMethod(data StructData) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("execute template: %w", err)
 	}
+	err = serializeFooterTmpl.Execute(&serializeSizeOutBuffer, &data)
+	if err != nil {
+		return "", fmt.Errorf("execute template: %w", err)
+	}
 	err = deserializeFooterTmpl.Execute(&deserializeOutBuffer, &data)
 	if err != nil {
 		return "", fmt.Errorf("execute template: %w", err)
 	}
+	serializeOutBuffer.Write(serializeSizeOutBuffer.Bytes())
 	serializeOutBuffer.Write(deserializeOutBuffer.Bytes())
 
 	return serializeOutBuffer.String(), nil
+}
+
+func serializeIntField(
+	intTypeName string,
+	serializeOutBuffer *bytes.Buffer,
+	serializeSizeOutBuffer *bytes.Buffer,
+	deserializeOutBuffer *bytes.Buffer,
+	field Field,
+) error {
+	err := serializeIntTmpl.Execute(serializeOutBuffer,
+		&struct {
+			FieldName string
+			CopyData  bool
+			TypeName  string
+		}{
+			field.Name,
+			true,
+			intTypeName,
+		})
+	if err != nil {
+		return err
+	}
+	err = serializeIntTmpl.Execute(serializeSizeOutBuffer,
+		&struct {
+			FieldName string
+			CopyData  bool
+			TypeName  string
+		}{
+			field.Name,
+			false,
+			intTypeName,
+		})
+	if err != nil {
+		return err
+	}
+	err = deserializeIntTmpl.Execute(deserializeOutBuffer,
+		&struct {
+			FieldName string
+			TypeName  string
+		}{
+			field.Name,
+			intTypeName,
+		})
+	return err
 }

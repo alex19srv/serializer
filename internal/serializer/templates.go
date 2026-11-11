@@ -21,7 +21,11 @@ import (
 `))
 
 var serializeHeaderTmpl = template.Must(template.New("serializeHeader").Parse(
-	`func (s *{{.Name}}) Serialise(buffer []byte) uintptr {
+	`func (s *{{ .StructName }}) Serialize(buffer []byte) uintptr {
+	offset := uintptr(0)
+`))
+var serializedSizeHeaderTmpl = template.Must(template.New("serializeHeader").Parse(
+	`func (s *{{ .StructName }}) SerializedSize() uintptr {
 	offset := uintptr(0)
 `))
 var serializeFooterTmpl = template.Must(template.New("serializeFooter").Parse(`
@@ -31,27 +35,27 @@ var serializeFooterTmpl = template.Must(template.New("serializeFooter").Parse(`
 
 `))
 var serializeIntTmpl = template.Must(template.New("serializeInt").Parse(
-	`	{
-		ptr := (*int)(unsafe.Add(unsafe.Pointer(&buffer[0]), offset))
-		*ptr = s.{{.Name}}
-		offset += unsafe.Sizeof(int(0))
+	`	{ {{ if .CopyData }}
+		ptr := (*{{ .TypeName }})(unsafe.Add(unsafe.Pointer(&buffer[0]), offset))
+		*ptr = s.{{.FieldName}}{{ end }}
+		offset += unsafe.Sizeof({{ .TypeName }}(0))
 	}
 `))
 var serializeStringTmpl = template.Must(template.New("serializeString").Parse(
-	`	{
+	`	{ {{ if .CopyData }}
 		ptr := (*uint16)(unsafe.Add(unsafe.Pointer(&buffer[0]), offset))
-		*ptr = uint16(len(s.{{.Name}}))
+		*ptr = uint16(len(s.{{.FieldName}})){{ end }}
 		offset += unsafe.Sizeof(uint16(0))
-		if len(s.{{.Name}}) > 0 {
-			copy(buffer[offset:], s.{{.Name}})
-			offset += uintptr(len(s.{{.Name}}))
+		if len(s.{{.FieldName}}) > 0 { {{ if .CopyData }}
+			copy(buffer[offset:], s.{{.FieldName}}){{ end }}
+			offset += uintptr(len(s.{{.FieldName}}))
 		}
 	}
 `))
 
 var deserializeHeaderTmpl = template.Must(template.New("deserializeHeader").Parse(
-	`func New{{.Name}}FromBytes(buffer []byte) {{.Name}} {
-	var res {{.Name}}
+	`func New{{.StructName}}FromBytes(buffer []byte) {{.StructName}} {
+	var res {{.StructName}}
 	offset := uintptr(0)
 `))
 var deserializeFooterTmpl = template.Must(template.New("deserializeFooter").Parse(`
@@ -62,9 +66,9 @@ var deserializeFooterTmpl = template.Must(template.New("deserializeFooter").Pars
 `))
 var deserializeIntTmpl = template.Must(template.New("deserializeInt").Parse(
 	`	{
-		ptr := (*int)(unsafe.Add(unsafe.Pointer(&buffer[0]), offset))
-		res.{{.Name}} = *ptr
-		offset += unsafe.Sizeof(int(0))
+		ptr := (*{{.TypeName}})(unsafe.Add(unsafe.Pointer(&buffer[0]), offset))
+		res.{{.FieldName}} = *ptr
+		offset += unsafe.Sizeof({{.TypeName}}(0))
 	}
 `))
 var deserializeStringTmpl = template.Must(template.New("deserializeString").Parse(
@@ -73,7 +77,7 @@ var deserializeStringTmpl = template.Must(template.New("deserializeString").Pars
 		size := *ptr
 		offset += unsafe.Sizeof(uint16(0))
 		if size > 0 {
-			res.{{.Name}} = string(buffer[offset : offset+uintptr(size)])
+			res.{{.FieldName}} = string(buffer[offset : offset+uintptr(size)])
 			offset += uintptr(size)
 		}
 	}

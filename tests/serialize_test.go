@@ -9,8 +9,8 @@ import (
 
 func TestIntDataRoundTrip(t *testing.T) {
 	original := IntData{ID: 0xffffabcd7382125}
-	buffer := make([]byte, 1024)
-	size := original.Serialise(buffer)
+	buffer := make([]byte, original.SerializedSize())
+	size := original.Serialize(buffer)
 
 	got := NewIntDataFromBytes(buffer[:size])
 	if got != original {
@@ -24,8 +24,8 @@ func TestDataRoundTrip(t *testing.T) {
 		Value: "persistent value",
 		SID:   0xffff00007777fff,
 	}
-	buffer := make([]byte, 1024)
-	size := original.Serialise(buffer)
+	buffer := make([]byte, original.SerializedSize())
+	size := original.Serialize(buffer)
 
 	got := NewDataFromBytes(buffer[:size])
 	if got != original {
@@ -39,9 +39,9 @@ func TestDataRoundTripMisaligned(t *testing.T) {
 		Value: "persistent value",
 		SID:   0xffff00007777fff,
 	}
-	bufferWhal := make([]byte, 1024)
+	bufferWhal := make([]byte, 1+original.SerializedSize())
 	buffer := bufferWhal[1:]
-	size := original.Serialise(buffer)
+	size := original.Serialize(buffer)
 
 	got := NewDataFromBytes(buffer[:size])
 	if got != original {
